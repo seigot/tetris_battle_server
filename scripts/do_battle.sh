@@ -101,13 +101,13 @@ function do_tetris(){
     local DROP_INTERVAL="$5"
     local RANDOM_SEED="$6"
     local GAME_TIME="180"
-    if [ "${EXEC_MODE}" != "RELEASE" ]; then
-	#GAME_TIME="3" # debug value
-	GAME_TIME="180" # debug value
-    fi 
+    #GAME_TIME="180" # debug value
+    local BLOCKNUMMAX="180"
+    BLOCKNUMMAX="180"
+    DROP_INTERVAL="1"
 
     local PRE_COMMAND="cd ~ && rm -rf tetris && git clone ${REPOSITORY_URL} -b ${BRANCH} && cd ~/tetris && pip3 install -r requirements.txt"
-    local DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} && jq . result.json"
+    local DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} --BlockNumMax ${BLOCKNUMMAX}&& jq . result.json"
     local POST_COMMAND="cd ~/tetris && jq . result.json"
 
     local TMP_LOG="tmp.json"
@@ -122,12 +122,25 @@ function do_tetris(){
 	docker rm ${CONTAINER_NAME}
     fi
     docker run -d --name ${CONTAINER_NAME} -p 6080:80 --shm-size=512m seigott/tetris_docker
-    
+
     # exec command
     docker exec ${CONTAINER_NAME} bash -c "${PRE_COMMAND}"
     if [ $? -ne 0 ]; then
 	return 1
     fi
+
+    # update do_command if necessary
+    TARGET_HASHID="23427b6548e7d168d2c740a258879bdedf1159ed" # add --BlockNumMax N option to start.py to specify block number to fin…
+    docker exec ${CONTAINER_NAME} bash -c "cd ~/tetris && git branch --contains ${TARGET_HASHID}"
+    RET=$?
+    if [ $RET -ne 0 ]; then
+	# if not contains, use old command
+	echo "not contains hashid: ${TARGET_HASHID}"
+	DROP_INTERVAL=1000
+	DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} && jq . result.json"
+    fi
+
+    # disconnect network to disable outbound connection for security
     docker network disconnect bridge ${CONTAINER_NAME}
     
     # do command
@@ -300,7 +313,8 @@ function upload_result() {
     local LEVEL=${1}
     
     today=$(date +"%Y%m%d%H%M")
-    RESULT_MD="result_Level${LEVEL}_${today}.md"
+    RESULT_MD="result_level${LEVEL}_${today}.md"
+    RESULT_MD_LATEST="result_level${LEVEL}.md"
     echo -n "" > ${RESULT_MD}
     echo "--- upload result"
 
@@ -324,8 +338,12 @@ function upload_result() {
     echo "## result(detail)" >> ${RESULT_MD}
     cat ${RESULT_TEXT} | csvtomd >> ${RESULT_MD}
 
+    # copy as latest file
+    cp ${RESULT_MD} ${RESULT_MD_LATEST}
+
     # git add/commit/push
     git add ${RESULT_MD}
+    git add ${RESULT_MD_LATEST}
     git commit -m "update"
     git push
 }
