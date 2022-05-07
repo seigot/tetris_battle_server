@@ -64,11 +64,11 @@ function get_target_player_list(){
 PLAYER_TEXT="player.txt"
 function printPlayerList() {
     echo "--- PlayerList"
-    Playerno=0
+    PlayerNo=0
     echo "PlayerNo,Player" > ${PLAYER_TEXT}
     for player in ${PLAYERS[@]}; do
 	PlayerNo=`expr $PlayerNo + 1`
-	echo $player
+	echo "$PlayerNo,$player"
 	echo "$PlayerNo,$player" >> ${PLAYER_TEXT}
     done
 }
@@ -349,7 +349,7 @@ function upload_result() {
 }
 
 function main(){
-    LEVEL=2
+    LEVEL=${1}
     get_target_player_list ${LEVEL}
     printPlayerList
     get_combination_list
@@ -358,4 +358,6 @@ function main(){
     upload_result ${LEVEL}
 }
 
-main
+main 2
+main 3
+main 1
