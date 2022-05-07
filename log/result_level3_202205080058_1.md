@@ -1,0 +1,14 @@
+DropInterval: 1
+## player list
+PlayerNo  |  Player
+----------|--------
+## result(matrix)
+W:win, L:lose, D:draw
+you\opponent PlayerNo
+---------------------
+## result(summary)
+Player  |  W  |  L  |  D
+--------|-----|-----|---
+## result(detail)
+GameNo  |  player1  |  player2
+--------|-----------|---------
