@@ -13,9 +13,9 @@
 
 ## 最新の総当たり戦の結果は以下に出力されます
 
-[level1の結果](./log/result_level1.md)  
-[level2の結果](./log/result_level2.md)  
-[level3の結果](./log/result_level3.md)  
+[level1の結果](./log/result_level1_1000.md)  
+[level2の結果](./log/result_level2_1000.md)  
+[level3の結果](./log/result_level3_1000.md)  
 
 ## サーバ稼働期間
 
