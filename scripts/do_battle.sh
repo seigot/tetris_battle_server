@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # プレーヤ一覧を取得する
+# 入力:なし
+# 出力:プレーヤ一覧(PLAYERS)
 function get_target_player_list(){
 
     local LEVEL=${1}
@@ -72,7 +74,9 @@ function get_target_player_list(){
     echo ${PLAYERS[@]}
 }
 
-# Player一覧を次の処理のためにファイル出力する
+# Player一覧を結果出力用にファイル出力する
+# 入力:プレーヤ一覧(PLAYERS)
+# 出力:プレーヤ一覧(結果出力用)(PLAYER_TEXT)
 PLAYER_TEXT="player.txt"
 function printPlayerList() {
     echo "--- PlayerList"
@@ -86,6 +90,8 @@ function printPlayerList() {
 }
 
 # プレーヤ一覧から、総当たり戦を実施するための組み合わせ一覧表を作成する
+# 入力:プレーヤ一覧(PLAYERS)
+# 出力:対戦の組み合わせ一覧表(COMBINATION_LIST)
 function get_combination_list() {
     COMBINATION_LIST=()
     echo "--- CombinationList"
@@ -101,6 +107,8 @@ function get_combination_list() {
 }
 
 # 対戦する
+# 入力:
+# 出力:
 RESULT_TEXT="result.txt"
 RESULT_MATRIX_TEXT="result_matrix.txt"
 CURRENT_SCORE_TEXT="current_score.txt"
@@ -174,6 +182,9 @@ function do_tetris(){
     return 0
 }
 
+# 対戦する
+# 入力:対戦情報(Player,level,etc)
+# 出力:対戦結果
 function do_battle(){
     local PLAYER1_=${1}
     local PLAYER2_=${2}
@@ -223,12 +234,15 @@ function do_battle(){
 }
 
 # 組み合わせ一覧表の順番に総当たり戦をする
+# 入力:対戦の組み合わせ一覧表(COMBINATION_LIST)
+# 出力:対戦結果の配列(RESULT_LIST)
 function do_battle_main() {
 
     local LEVEL=${1}
     local DROP_INTERVAL=${2}
 
     echo ${COMBINATION_LIST[@]}
+    RESULT_LIST=()
 
     #echo -n > ${RESULT_TEXT}
     echo "GameNo,player1,player2" > ${RESULT_TEXT}
@@ -269,9 +283,12 @@ function do_battle_main() {
 }
 
 # 対戦結果の配列から結果表を出力する
+# 入力:対戦結果の配列(RESULT_LIST),対戦の組み合わせ一覧表(COMBINATION_LIST)
+# 出力:結果表(RESULT_MATRIX_TEXT)
 function get_result() {
     # show result list
-    #echo ${RESULT_LIST[@]}
+    echo "--- ResultList"
+    echo ${RESULT_LIST[@]}
     echo "--- Result"
     count=0
 
@@ -328,6 +345,9 @@ function get_result() {
     cat ${RESULT_MATRIX_TEXT}
 }
 
+# 結果を更新する
+# 入力:結果情報
+# 出力:なし
 function upload_result() {
 
     local LEVEL=${1}
@@ -374,6 +394,7 @@ function upload_result() {
     git push
 }
 
+# main処理
 function main(){
     local LEVEL=${1}
     local DROP_INTERVAL=${2}
