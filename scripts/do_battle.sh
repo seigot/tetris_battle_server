@@ -337,9 +337,9 @@ function upload_result() {
     RESULT_MD="result_level${LEVEL}_${today}_${DROP_INTERVAL}.md"
     RESULT_MD_LATEST="result_level${LEVEL}_${DROP_INTERVAL}.md"
     echo -n "" > ${RESULT_MD}
-    echo "Date: ${today}" >> ${RESULT_MD}
-    echo "Level: ${LEVEL}" >> ${RESULT_MD}
-    echo "DropInterval: ${DROP_INTERVAL}" >> ${RESULT_MD}
+    echo "Date: ${today}  " >> ${RESULT_MD}
+    echo "Level: ${LEVEL}  " >> ${RESULT_MD}
+    echo "DropInterval: ${DROP_INTERVAL}  " >> ${RESULT_MD}
 
     echo "--- upload result"
 
