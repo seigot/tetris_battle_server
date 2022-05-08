@@ -1,25 +1,28 @@
 #!/bin/sh
 
 # プレーヤ一覧を取得する
-PLAYERS=()
-#PLAYERS=(
-#    "isshy-you@ish04e"
-#    "isshy-you@ish04f"
-#    "isshy-you@ish05a"
-#    "isshy-you@ish05b"
-#    "isshy-you@ish05c"
-#    "isshy-you@ish05d"
-#    "isshy-you@ish05f"
-#    "isshy-you@ish05g3"
-#    "isshy-you@ish05g6"
-#    "isshy-you@ish05h3"
-#    "seigot@master"
-#)
 function get_target_player_list(){
 
     local LEVEL=${1}
+    local DROP_INTERVAL=${2}
     RESULT_LEVEL_X_CSV="result_level_${LEVEL}.csv"
     rm -f ${RESULT_LEVEL_X_CSV}
+
+    # プレーヤ用配列
+    PLAYERS=()
+    #PLAYERS=(
+    #    "isshy-you@ish04e"
+    #    "isshy-you@ish04f"
+    #    "isshy-you@ish05a"
+    #    "isshy-you@ish05b"
+    #    "isshy-you@ish05c"
+    #    "isshy-you@ish05d"
+    #    "isshy-you@ish05f"
+    #    "isshy-you@ish05g3"
+    #    "isshy-you@ish05g6"
+    #    "isshy-you@ish05h3"
+    #    "seigot@master"
+    #)
 
     # 入力ファイルを取得
     wget https://raw.githubusercontent.com/seigot/tetris_score_server/main/log/${RESULT_LEVEL_X_CSV}
@@ -28,7 +31,7 @@ function get_target_player_list(){
     TARGET_LIST=()
     TARGET_LIST_UNIQ=()
     #COMPARE_DATE=`date --date '8 week ago' +"%Y%m%d"`
-    COMPARE_DATE=`date --date '10 week ago' +"%Y%m%d"`
+    COMPARE_DATE=`date --date '8 week ago' +"%Y%m%d"`
 
     while read -r line
     do
@@ -37,6 +40,15 @@ function get_target_player_list(){
         if [ "$CHECK_STR" == "DATETIME" ]; then
             continue
         fi
+
+	# check drop interval value
+        DROP_INTERVAL_VAL=`echo $line | cut -d, -f7 | sed -e 's/ //g'`
+	echo "DROP_INTERVAL_VAL:${DROP_INTERVAL_VAL}"
+	echo "DROP_INTERVAL:${DROP_INTERVAL}"
+        if [ "${DROP_INTERVAL_VAL}" != "${DROP_INTERVAL}" ]; then
+	    echo "${DROP_INTERVAL_VAL} != ${DROP_INTERVAL}"
+            continue
+	fi
 
         # skip past line
         TARGET_DATE=`echo $line | cut -d, -f1 | cut -d_ -f1 | sed -E 's/[\/|\_|\:]//g'`
@@ -74,8 +86,8 @@ function printPlayerList() {
 }
 
 # プレーヤ一覧から、総当たり戦を実施するための組み合わせ一覧表を作成する
-COMBINATION_LIST=()
 function get_combination_list() {
+    COMBINATION_LIST=()
     echo "--- CombinationList"
     N=`echo ${#PLAYERS[*]}`
     N=`expr ${N} - 1`
@@ -102,12 +114,9 @@ function do_tetris(){
     local RANDOM_SEED="$6"
     local GAME_TIME="180"
     #GAME_TIME="180" # debug value
-    local BLOCKNUMMAX="180"
-    BLOCKNUMMAX="180"
-    DROP_INTERVAL="1"
-
+    local BLOCKNUMMAX="-1"
     local PRE_COMMAND="cd ~ && rm -rf tetris && git clone ${REPOSITORY_URL} -b ${BRANCH} && cd ~/tetris && pip3 install -r requirements.txt"
-    local DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} --BlockNumMax ${BLOCKNUMMAX}&& jq . result.json"
+    local DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} --BlockNumMax ${BLOCKNUMMAX} && jq . result.json"
     local POST_COMMAND="cd ~/tetris && jq . result.json"
 
     local TMP_LOG="tmp.json"
@@ -129,21 +138,29 @@ function do_tetris(){
 	return 1
     fi
 
-    # update do_command if necessary
+    # check if --BlockNumMax N option is available 
     TARGET_HASHID="23427b6548e7d168d2c740a258879bdedf1159ed" # add --BlockNumMax N option to start.py to specify block number to fin…
     docker exec ${CONTAINER_NAME} bash -c "cd ~/tetris && git branch --contains ${TARGET_HASHID}"
     RET=$?
     if [ $RET -ne 0 ]; then
-	# if not contains, use old command
+	# if unavaiable, use old command
 	echo "not contains hashid: ${TARGET_HASHID}"
-	DROP_INTERVAL=1000
 	DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} && jq . result.json"
+    else
+	# if avaiable
+	if [ "${DROP_INTERVAL}" == "1000" ]; then
+	    # DROP_INTERVAL=1000の場合に処理効率化ができないか確認する
+	    BLOCKNUMMAX="180"
+	    DROP_INTERVAL="1"
+	    DO_COMMAND="cd ~/tetris && export DISPLAY=:1 && python3 start.py -l ${LEVEL} -t ${GAME_TIME} -d ${DROP_INTERVAL} -r ${RANDOM_SEED} --BlockNumMax ${BLOCKNUMMAX} && jq . result.json"
+	fi
     fi
 
     # disconnect network to disable outbound connection for security
     docker network disconnect bridge ${CONTAINER_NAME}
     
     # do command
+    echo "DO_COMMAND:${DO_COMMAND}"
     docker exec ${CONTAINER_NAME} bash -c "${DO_COMMAND}"
     if [ $? -ne 0 ]; then
 	return 1
@@ -161,6 +178,7 @@ function do_battle(){
     local PLAYER1_=${1}
     local PLAYER2_=${2}
     local LEVEL_=${3}
+    local DROP_INTERVAL=${4}
     local RANDOM_SEED=${RANDOM}
 
     #echo "${PLAYER1}, ${PLAYER2}"
@@ -169,7 +187,7 @@ function do_battle(){
     PLAYER2_NAME=`echo ${PLAYER2_} | cut -d'@' -f1`
     PLAYER2_BRANCH=`echo ${PLAYER2_} | cut -d'@' -f2`
     ## Player1
-    do_tetris 0 "https://github.com/${PLAYER1_NAME}/tetris" "${PLAYER1_BRANCH}" "${LEVEL_}" 1000 "${RANDOM_SEED}"
+    do_tetris 0 "https://github.com/${PLAYER1_NAME}/tetris" "${PLAYER1_BRANCH}" "${LEVEL_}" "${DROP_INTERVAL}" "${RANDOM_SEED}"
     RET=$?
     if [ $RET -ne 0 ]; then
 	PLAYER1_SCORE=0
@@ -177,7 +195,7 @@ function do_battle(){
 	PLAYER1_SCORE=`cat ${CURRENT_SCORE_TEXT}`
     fi
     ## Player2
-    do_tetris 0 "https://github.com/${PLAYER2_NAME}/tetris" "${PLAYER2_BRANCH}" "${LEVEL_}" 1000 "${RANDOM_SEED}"
+    do_tetris 0 "https://github.com/${PLAYER2_NAME}/tetris" "${PLAYER2_BRANCH}" "${LEVEL_}" "${DROP_INTERVAL}" "${RANDOM_SEED}"
     RET=$?
     if [ $RET -ne 0 ]; then
 	PLAYER2_SCORE=0
@@ -208,7 +226,9 @@ function do_battle(){
 function do_battle_main() {
 
     local LEVEL=${1}
-    #echo ${COMBINATION_LIST[@]}
+    local DROP_INTERVAL=${2}
+
+    echo ${COMBINATION_LIST[@]}
 
     #echo -n > ${RESULT_TEXT}
     echo "GameNo,player1,player2" > ${RESULT_TEXT}
@@ -232,7 +252,7 @@ function do_battle_main() {
 
         # 対戦必要な組み合わせの場合
         # ここで対戦する(PLAYER1 vs PLAYER2) -->
-	do_battle "${PLAYER1}" "${PLAYER2}" "${LEVEL}"
+	do_battle "${PLAYER1}" "${PLAYER2}" "${LEVEL}" "${DROP_INTERVAL}"
 	RET=$?
 	if [ $RET -eq 0 ]; then
 	    RESULT="W"
@@ -311,11 +331,16 @@ function get_result() {
 function upload_result() {
 
     local LEVEL=${1}
-    
+    local DROP_INTERVAL=${2}
+
     today=$(date +"%Y%m%d%H%M")
-    RESULT_MD="result_level${LEVEL}_${today}.md"
-    RESULT_MD_LATEST="result_level${LEVEL}.md"
+    RESULT_MD="result_level${LEVEL}_${today}_${DROP_INTERVAL}.md"
+    RESULT_MD_LATEST="result_level${LEVEL}_${DROP_INTERVAL}.md"
     echo -n "" > ${RESULT_MD}
+    echo "Date: ${today}" >> ${RESULT_MD}
+    echo "Level: ${LEVEL}" >> ${RESULT_MD}
+    echo "DropInterval: ${DROP_INTERVAL}" >> ${RESULT_MD}
+
     echo "--- upload result"
 
     echo "--- player.txt"
@@ -342,6 +367,7 @@ function upload_result() {
     cp ${RESULT_MD} ${RESULT_MD_LATEST}
 
     # git add/commit/push
+    git pull
     git add ${RESULT_MD}
     git add ${RESULT_MD_LATEST}
     git commit -m "update"
@@ -349,15 +375,35 @@ function upload_result() {
 }
 
 function main(){
-    LEVEL=${1}
-    get_target_player_list ${LEVEL}
+    local LEVEL=${1}
+    local DROP_INTERVAL=${2}
+
+    get_target_player_list ${LEVEL} ${DROP_INTERVAL}
     printPlayerList
     get_combination_list
-    do_battle_main ${LEVEL}
+    do_battle_main ${LEVEL} ${DROP_INTERVAL}
     get_result
-    upload_result ${LEVEL}
+    upload_result ${LEVEL} ${DROP_INTERVAL}
 }
 
-main 2
-main 3
-main 1
+PRE_DATE="00000000"
+while true
+do
+    # 日付が変わったら実行する
+    # check date
+    CURRENT_DATE=`date +"%Y%m%d"`
+    if [ ${CURRENT_DATE} -eq ${PRE_DATE} ];then
+        echo "date not updated. ${CURRENT_DATE}"
+        sleep 900
+        continue
+    fi
+    echo "date updated !! ${PRE_DATE} --> ${CURRENT_DATE}"
+    PRE_DATE=${CURRENT_DATE}
+
+    # main
+    main 2 1000
+    main 3 1000
+    main 1 1000
+    main 3 1
+done
+
