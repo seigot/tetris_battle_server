@@ -31,7 +31,7 @@ function get_target_player_list(){
     TARGET_LIST=()
     TARGET_LIST_UNIQ=()
     #COMPARE_DATE=`date --date '8 week ago' +"%Y%m%d"`
-    COMPARE_DATE=`date --date '8 week ago' +"%Y%m%d"`
+    COMPARE_DATE=`date --date '10 week ago' +"%Y%m%d"`
 
     while read -r line
     do
@@ -401,9 +401,9 @@ do
     PRE_DATE=${CURRENT_DATE}
 
     # main
+    main 1 1000
     main 2 1000
     main 3 1000
-    main 1 1000
     main 3 1
 done
 
