@@ -5,15 +5,15 @@
 ## 使い方
 
 スコアアタック用サーバに登録されたプログラムを使い総当たり戦をします  
-以下からリポジトリURLを入力して下さい 
+以下にリポジトリURLを入力して下さい 
 
 > [tetris_score_server](https://github.com/seigot/tetris_score_server)  
 > 以下にリポジトリURLを入力して下さい  
 > [2022/3_Tetrisスコアアタック用サーバ（Google フォームを使用しています）](https://docs.google.com/forms/d/e/1FAIpQLSdrJJlzrF0DWrHv9JYQTbsoYHws0mKdU-9LBbN3z1iHDuSzGg/viewform?vc=0&c=0&w=1&flr=0&usp=mail_form_link)  
 
-## 結果は以下に出力されます
+## 結果
 
-最新の総当たり戦の結果を以下に出力します
+最新の結果を以下に出力します
 
 [level1の結果](./log/result_level1_1000.md)  
 [level2の結果](./log/result_level2_1000.md)  
