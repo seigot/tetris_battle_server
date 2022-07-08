@@ -52,6 +52,16 @@ function get_target_player_list(){
             continue
 	fi
 
+	# check if use machine learning mode
+	# currently, skip..
+        VALUE_MODE=`echo $line | cut -d, -f8 | sed -e 's/ //g'`
+	echo "VALUE_MODE:${VALUE_MODE}"
+        if [ "${VALUE_MODE}" != "default" ]; then
+	    echo "${VALUE_MODE} != default"
+	    echo "skip.."
+            continue
+	fi
+
         # skip past line
         TARGET_DATE=`echo $line | cut -d, -f1 | cut -d_ -f1 | sed -E 's/[\/|\_|\:]//g'`
         if [ $TARGET_DATE -lt $COMPARE_DATE ]; then
