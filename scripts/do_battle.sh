@@ -56,7 +56,7 @@ function get_target_player_list(){
 	# currently, skip..
         VALUE_MODE=`echo $line | cut -d, -f8 | sed -e 's/ //g'`
 	echo "VALUE_MODE:${VALUE_MODE}"
-        if [ "${VALUE_MODE}" != "default" ]; then
+        if [ "${VALUE_MODE}" != "default" -a "${VALUE_MODE}" != "-" ]; then
 	    echo "${VALUE_MODE} != default"
 	    echo "skip.."
             continue
