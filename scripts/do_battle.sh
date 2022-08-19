@@ -201,6 +201,9 @@ function do_battle(){
     local LEVEL_=${3}
     local DROP_INTERVAL=${4}
     local RANDOM_SEED=${RANDOM}
+    if [ "${LEVEL_}" == "1" ]; then
+	RANDOM_SEED=0
+    fi
 
     #echo "${PLAYER1}, ${PLAYER2}"
     PLAYER1_NAME=`echo ${PLAYER1_} | cut -d'@' -f1`
